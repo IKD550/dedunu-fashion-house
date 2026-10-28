@@ -17,6 +17,15 @@ const activeAdminTokens = new Set();
 app.use(cors());
 app.use(express.json());
 
+// --- STATIC FILES & HOMEPAGE ROUTE ---
+// Serve static files (HTML, CSS, images, etc.) from the root directory
+app.use(express.static(path.join(__dirname)));
+
+// Explicit route for homepage
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 const dbPath = path.join(__dirname, 'data.json');
 
 const readDB = () => {
