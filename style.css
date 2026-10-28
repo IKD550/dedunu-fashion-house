@@ -1,0 +1,74 @@
+/* --- Dedunu Fashion House - Professional Stylesheet --- */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Brand Rainbow Gradient Text */
+.gradient-text {
+    background: linear-gradient(90deg, #2563eb, #0284c7, #059669, #d97706, #dc2626);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Product Card Styling & Hover Effects */
+.product-card {
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e2e8f0;
+}
+
+.product-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 30px -10px rgba(2, 132, 199, 0.15);
+    border-color: #cbd5e1;
+}
+
+/* Category Filter Active States */
+.category-btn-active {
+    background: linear-gradient(135deg, #0284c7 0%, #1d4ed8 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+}
+
+/* Modal Smooth FadeIn Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar for Modal and Page */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #0284c7;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #0284eb;
+}

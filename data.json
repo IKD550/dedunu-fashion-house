@@ -1,0 +1,35 @@
+{
+  "categories": [
+    "Toys",
+    "Watch",
+    "Home Item"
+  ],
+  "products": [
+    {
+      "id": "1792867321926",
+      "title": "Desk",
+      "category": "Home Item",
+      "price": 2000,
+      "discountPrice": 1950,
+      "description": "compact size and simple to make it",
+      "imageUrl": "https://epicofficefurniture.com.au/wp-content/uploads/1970/01/Rapid-Worker-Straight-Desk.jpg",
+      "whatsappMsg": "",
+      "stockStatus": "In Stock",
+      "colors": ""
+    },
+    {
+      "id": "1792869877126",
+      "title": "YP3 Foam Aircraft",
+      "category": "Toys",
+      "price": 4500,
+      "stockStatus": "Out of Stock",
+      "colors": "Black, Red, Blue",
+      "description": "Description\n\nName: Remote Control Aircraft\n\nColor: Red/Blue\n\nFlight time: about 10 minutes\n\nCharging time: about 60min\n\nRemote control distance: 80m\n\nBody battery: 3.7v-1800mA/H Lithium-Ion Rechargeable Battery\n\nTransmitter battery: 3*AAA battery (not included)\n\nQuadcopter Size: 18*25.5*5.7cm\n\nColor Box Size: 32.5*7*20.5cm\n\nMotor: 4\n\nRemote control function: One-key takeoff/ One-key landing/ Ascend/ Descend/ Turn left and right/ Forward/ Backward/ Fly left/ Fly right/ Roll/ Headless mode/ Fast and slow gear\n\nFeatures:\n\nDurable and Safe Design: Constructed from lightweight foam material, ensuring durability. The propellers are enclosed by a protective guard for safety, reducing the risk of injury and protecting the drone from damage.\n\nExciting Movement Capabilities: This kid-friendly drone inches and offers a variety of stunt flying options including 4 turbofan motor,360° flip, headless mode, one click return, emergency stop and basic movements like forward, backward, and side-to-side flight. An ideal gift for birthdays, Christmas, or holidays.\n\nUser-Friendly Operation: Features One Key Taking-off/Landing and an one key surround and hover function for easy takeoff and stable hovering. Includes a Headless Mode for easier control, regardless of the drone's orientation, and EPP drop resistant material making it suitable for kids, beginners, and hobbyists.\n\nPacking List\n\n1 * Quadcopter\n\n1* Transmitter\n\n1* Lipo Battery\n\n1* USB Charging Cable\n\n1* Instruction",
+      "images": [
+        "https://www.toys.lk/public/uploads/all/9iry6JN08LYRHwtYX15rXtN2yYYpjlZEg70zRQvM.jpg",
+        "https://www.toys.lk/public/uploads/all/i1pEocCJBNRHDfZzOeYangAppwlztX42xa1lH3yU.jpg",
+        "https://www.toys.lk/public/uploads/all/WVrNehfqCiweloSyARekhBnUU7qf7Y4XPZS8pDP8.jpg"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dedunu Fashion House - Elpitiya</title>
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen">
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-gradient-to-r from-sky-600 via-blue-600 to-amber-500 text-white text-xs py-2 px-4 text-center font-medium tracking-wide shadow-sm">
+        ✨ Welcome to Dedunu Fashion House Elpitiya | Islandwide Delivery Available
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            <a href="#" class="flex items-center gap-3 shrink-0">
+                <img src="logo.png" alt="Dedunu Fashion House Logo" class="h-12 sm:h-14 w-auto object-contain">
+            </a>
+
+            <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
+                <a href="#catalog" class="hover:text-sky-600 transition">Catalog</a>
+                <a href="#about" class="hover:text-sky-600 transition">About Us</a>
+                <a href="#contact" class="hover:text-sky-600 transition">Contact</a>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                <a href="https://wa.me/94700000000" target="_blank" class="bg-gradient-to-r from-sky-500 to-blue-600 text-white text-xs sm:text-sm font-semibold px-5 py-2.5 rounded-full hover:shadow-lg transition duration-300 flex items-center gap-2">
+                    <span>💬 WhatsApp Support</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="bg-gradient-to-b from-sky-50/50 via-white to-slate-50 py-12 px-4 text-center border-b border-slate-200/60">
+        <div class="max-w-3xl mx-auto">
+            <span class="inline-block text-xs uppercase tracking-widest text-sky-600 font-bold bg-sky-100/80 px-4 py-1.5 rounded-full mb-4">
+                Official Web Catalog
+            </span>
+            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mt-1 mb-4">
+                Elegance & Style for <span class="gradient-text">Everyone</span>
+            </h2>
+            <p class="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+                Explore our premium collection of Sarees, Watches, Toys, and Fashion Wear at Dedunu Fashion House, Elpitiya.
+            </p>
+        </div>
+    </section>
+
+    <!-- Main Catalog Content -->
+    <main id="catalog" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-grow w-full">
+        
+        <div class="text-center mb-8">
+            <h3 class="text-2xl sm:text-3xl font-bold text-slate-900">Our Collections</h3>
+            <p class="text-slate-500 text-sm mt-1">Search products or filter by category</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="max-w-xl mx-auto mb-8">
+            <div class="relative flex items-center">
+                <input type="text" id="search-input" oninput="handleSearch()" placeholder="🔍 Search products by name, category, color, or description..." class="w-full px-5 py-3 rounded-full border border-slate-300 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition">
+                <button onclick="clearSearch()" id="clear-search-btn" class="hidden absolute right-4 text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
+            </div>
+        </div>
+
+        <!-- Category Filters -->
+        <div class="flex items-center justify-center gap-2 sm:gap-3 flex-wrap mb-10" id="category-filters">
+            <button onclick="filterProducts('All')" class="category-btn category-btn-active px-6 py-2.5 rounded-full text-sm font-semibold transition">All Items</button>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8"></div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <div class="text-5xl mb-4">🛍️</div>
+            <p class="text-slate-400 text-lg font-medium">No products found matching your search.</p>
+        </div>
+    </main>
+
+    <!-- Product Detail Modal (Pop-up) - Click outside to close enabled -->
+    <div id="product-modal" onclick="handleOutsideClick(event)" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden relative animate-fadeIn my-auto max-h-[90vh] flex flex-col">
+            
+            <!-- Fixed Modal Header with Close Button -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-20">
+                <span id="modal-category" class="bg-sky-100 text-sky-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Category</span>
+                <button onclick="closeProductModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition">✕</button>
+            </div>
+
+            <!-- Modal Scrollable Body -->
+            <div class="grid grid-cols-1 md:grid-cols-2 overflow-y-auto p-6 gap-6">
+                <!-- Image Gallery -->
+                <div class="flex flex-col items-center justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <div class="w-full h-80 rounded-xl overflow-hidden mb-4 bg-white flex items-center justify-center shadow-inner">
+                        <img id="modal-main-image" src="" alt="Product" class="w-full h-full object-contain">
+                    </div>
+                    <div id="modal-thumbnails" class="flex gap-2 overflow-x-auto w-full justify-center py-1"></div>
+                </div>
+
+                <!-- Product Info & WhatsApp Inquiry -->
+                <div class="flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 id="modal-title" class="text-2xl font-extrabold text-slate-900">Title</h2>
+                            <span id="modal-stock-badge" class="text-xs font-bold px-2.5 py-1 rounded-full">Stock</span>
+                        </div>
+                        <div class="text-2xl font-black text-sky-600 mb-4" id="modal-price">LKR 0</div>
+                        
+                        <!-- Available Colors -->
+                        <div class="mb-4" id="modal-colors-container">
+                            <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1.5">Available Colors / Options:</h4>
+                            <div id="modal-colors-list" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+
+                        <div class="border-t border-slate-100 my-3"></div>
+                        <h4 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">Description</h4>
+                        <p id="modal-description" class="text-slate-600 text-sm leading-relaxed mb-6 whitespace-pre-line"></p>
+                    </div>
+
+                    <a id="modal-whatsapp-btn" href="#" target="_blank" class="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold py-3.5 px-6 rounded-2xl text-center text-sm shadow-lg transition flex items-center justify-center gap-2 mt-4">
+                        <span>💬 Order / Inquire via WhatsApp</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <section id="contact" class="bg-slate-900 text-slate-300 py-16 px-4 sm:px-6 lg:px-8 border-t-4 border-sky-500">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div>
+                <img src="logo.png" alt="Dedunu Fashion House" class="h-12 w-auto mb-4 brightness-200">
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Your trusted clothing and lifestyle showroom in Elpitiya. Offering premium sarees, watches, toys, and modern apparel.
+                </p>
+            </div>
+            <div>
+                <h4 class="text-white text-sm font-bold tracking-wider uppercase mb-3">Visit Showroom</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Main Street, Elpitiya<br>Southern Province, Sri Lanka
+                </p>
+            </div>
+            <div>
+                <h4 class="text-white text-sm font-bold tracking-wider uppercase mb-3">Customer Support</h4>
+                <p class="text-xs text-slate-400 leading-relaxed mb-2">
+                    Hotline / WhatsApp: <span class="text-white font-semibold">+94 70 000 0000</span>
+                </p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
+            <p>&copy; 2026 Dedunu Fashion House, Elpitiya. All rights reserved.</p>
+        </div>
+    </section>
+
+    <!-- Script -->
+    <script>
+        let allProducts = [];
+        let allCategories = [];
+        let activeCategory = 'All';
+
+        async function fetchStoreData() {
+            try {
+                const response = await fetch('http://localhost:5000/api/store-data');
+                const result = await response.json();
+                if (result.success) {
+                    allCategories = result.data.categories;
+                    allProducts = result.data.products;
+                    renderCategories();
+                    applyFilters();
+                }
+            } catch (error) {
+                console.error("Error connecting to server:", error);
+            }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-filters');
+            let buttonsHTML = `<button onclick="filterProducts('All')" class="category-btn category-btn-active px-6 py-2.5 rounded-full text-sm font-semibold transition">All Items</button>`;
+            
+            allCategories.forEach(cat => {
+                buttonsHTML += `<button onclick="filterProducts('${cat}')" class="category-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-6 py-2.5 rounded-full text-sm font-semibold transition">${cat}</button>`;
+            });
+            container.innerHTML = buttonsHTML;
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('product-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            if (products.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            let html = '';
+
+            products.forEach(p => {
+                const images = p.images && p.images.length > 0 ? p.images : [p.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500'];
+                const displayImage = images[0];
+                const isOutOfStock = p.stockStatus === 'Out of Stock';
+
+                html += `
+                    <div onclick="openProductModal('${p.id}')" class="product-card bg-white rounded-2xl overflow-hidden flex flex-col cursor-pointer group relative">
+                        ${isOutOfStock ? '<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-10 flex items-center justify-center"><span class="bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">Out of Stock</span></div>' : ''}
+                        
+                        <div class="h-64 bg-slate-100 overflow-hidden relative">
+                            <img src="${displayImage}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <span class="absolute top-3 left-3 bg-white/90 backdrop-blur text-sky-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">${p.category}</span>
+                            ${images.length > 1 ? `<span class="absolute bottom-3 right-3 bg-slate-900/80 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">📸 ${images.length} Photos</span>` : ''}
+                        </div>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="font-bold text-base text-slate-900 mb-1 group-hover:text-sky-600 transition">${p.title}</h3>
+                            ${p.colors ? `<p class="text-xs text-sky-700 font-medium mb-2">🎨 Colors: ${p.colors}</p>` : ''}
+                            <p class="text-slate-500 text-xs leading-relaxed mb-4 line-clamp-2">${p.description || 'Click to view details.'}</p>
+                            <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                                <span class="text-base font-extrabold text-slate-900">Rs. ${p.price.toLocaleString()}</span>
+                                <span class="bg-sky-50 text-sky-700 hover:bg-sky-600 hover:text-white text-xs px-3.5 py-1.5 rounded-full font-semibold transition">View Details</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function filterProducts(category) {
+            activeCategory = category;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                if(btn.textContent.trim() === (category === 'All' ? 'All Items' : category)) {
+                    btn.className = "category-btn category-btn-active px-6 py-2.5 rounded-full text-sm font-semibold transition";
+                } else {
+                    btn.className = "category-btn bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 px-6 py-2.5 rounded-full text-sm font-semibold transition";
+                }
+            });
+            applyFilters();
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (query.length > 0) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+            applyFilters();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('clear-search-btn').classList.add('hidden');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            let filtered = allProducts;
+
+            if (activeCategory !== 'All') {
+                filtered = filtered.filter(p => p.category === activeCategory);
+            }
+
+            if (searchQuery !== '') {
+                filtered = filtered.filter(p => 
+                    p.title.toLowerCase().includes(searchQuery) ||
+                    p.category.toLowerCase().includes(searchQuery) ||
+                    (p.colors && p.colors.toLowerCase().includes(searchQuery)) ||
+                    (p.description && p.description.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            renderProducts(filtered);
+        }
+
+        function openProductModal(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            const images = product.images && product.images.length > 0 ? product.images : [product.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500'];
+
+            document.getElementById('modal-title').textContent = product.title;
+            document.getElementById('modal-category').textContent = product.category;
+            document.getElementById('modal-price').textContent = `Rs. ${product.price.toLocaleString()}`;
+            document.getElementById('modal-description').textContent = product.description || 'No description available.';
+            
+            const stockBadge = document.getElementById('modal-stock-badge');
+            if (product.stockStatus === 'Out of Stock') {
+                stockBadge.textContent = 'Out of Stock';
+                stockBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700';
+            } else {
+                stockBadge.textContent = 'In Stock';
+                stockBadge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700';
+            }
+
+            const colorContainer = document.getElementById('modal-colors-list');
+            if (product.colors && product.colors.trim() !== '') {
+                document.getElementById('modal-colors-container').style.display = 'block';
+                let colorBadges = '';
+                product.colors.split(',').forEach(color => {
+                    colorBadges += `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold px-3 py-1 rounded-lg">🎨 ${color.trim()}</span>`;
+                });
+                colorContainer.innerHTML = colorBadges;
+            } else {
+                document.getElementById('modal-colors-container').style.display = 'none';
+            }
+
+            const mainImg = document.getElementById('modal-main-image');
+            mainImg.src = images[0];
+
+            const thumbContainer = document.getElementById('modal-thumbnails');
+            let thumbHTML = '';
+            images.forEach((img, idx) => {
+                thumbHTML += `
+                    <img src="${img}" onclick="setMainModalImage('${img}')" class="w-14 h-14 rounded-xl object-cover cursor-pointer border-2 ${idx === 0 ? 'border-sky-500' : 'border-transparent'} hover:border-sky-400 transition">
+                `;
+            });
+            thumbContainer.innerHTML = thumbHTML;
+
+            const phone = "94700000000";
+            const message = `Hello Dedunu Fashion House! 👋\n\nI would like to inquire about this item:\n\n📌 *Product:* ${product.title}\n🗂️ *Category:* ${product.category}\n🎨 *Available Colors:* ${product.colors || 'Standard'}\n💰 *Price:* Rs. ${product.price.toLocaleString()}\n📦 *Stock:* ${product.stockStatus || 'In Stock'}\n\nPlease let me know if this is available for delivery/pickup!`;
+            
+            document.getElementById('modal-whatsapp-btn').href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+            const modal = document.getElementById('product-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function setMainModalImage(src) {
+            document.getElementById('modal-main-image').src = src;
+            document.querySelectorAll('#modal-thumbnails img').forEach(img => {
+                if (img.src === src) {
+                    img.classList.add('border-sky-500');
+                    img.classList.remove('border-transparent');
+                } else {
+                    img.classList.remove('border-sky-500');
+                    img.classList.add('border-transparent');
+                }
+            });
+        }
+
+        function closeProductModal() {
+            const modal = document.getElementById('product-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function handleOutsideClick(event) {
+            const modal = document.getElementById('product-modal');
+            if (event.target === modal) {
+                closeProductModal();
+            }
+        }
+
+        fetchStoreData();
+    </script>
+</body>
+</html>
