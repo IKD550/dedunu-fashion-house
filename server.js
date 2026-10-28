@@ -1,19 +1,26 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
+const cors = require('cors');
+
 const app = express();
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ස්ටැටික් ෆයිල්ස් (HTML, CSS, JS) ලෝඩ් කිරීම සඳහා
+// ස්ටැටික් ෆයිල්ස් (HTML, CSS, JS සහ ෆ්‍රන්ට්එන්ඩ් ෆයිල්ස්) ලෝඩ් කිරීම සඳහා
 app.use(express.static(path.join(__dirname, '.')));
 
-// 1. MongoDB Atlas Connection (Render Environment Variable හෝ Fallback එක ලෙස)
+// ==========================================
+// 1. MONGODB ATLAS DATABASE CONNECTION
+// ==========================================
 const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://imeshkavinda550_db_user:GVvK8sRKWOVDsKV4@cluster0.w8vgaoy.mongodb.net/dedunu_fashion?retryWrites=true&w=majority";
 
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 5000 
+})
   .then(() => {
     console.log('✅ Connected to MongoDB Atlas successfully!');
   })
@@ -21,35 +28,50 @@ mongoose.connect(MONGO_URI)
     console.error('❌ MongoDB connection error:', err);
   });
 
-// 2. Mongoose Schemas & Models
+// ==========================================
+// 2. DATABASE SCHEMA & MODEL
+// ==========================================
+// Admin පැනලයෙන් එවෙන Categories සහ Products වැනි දත්ත JSON ලෙස ස්ටෝර් කිරීමට
 const storeDataSchema = new mongoose.Schema({
-  type: { type: String, required: true }, // උදාහරණයක් ලෙස: product, category ආදී වශයෙන්
-  data: { type: Object, required: true },
-  createdAt: { type: Date, default: Date.now }
+  type: { type: String, required: true, unique: true }, // උදාහරණයක් ලෙස: 'products', 'categories'
+  data: { type: mongoose.Schema.Types.Mixed, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 const StoreData = mongoose.model('StoreData', storeDataSchema);
 
-// 3. Admin Authentication Middleware (x-admin-token පරීක්ෂා කිරීම සඳහා)
+// ==========================================
+// 3. ADMIN AUTHENTICATION MIDDLEWARE
+// ==========================================
 const verifyAdminToken = (req, res, next) => {
-  const adminToken = req.headers['x-admin-token'];
-  // ඔබේ ඇඩ්මින් ටෝකන් එක මෙහිදී පරීක්ෂා කෙරේ
+  const adminToken = req.headers['x-admin-token'] || req.query.token;
   if (adminToken) {
     next();
   } else {
-    // ටෝකන් එක නැත්නම් හෝ වැරදි නම් රික්වෙස්ට් එක බ්ලොක් කරයි
     res.status(401).json({ success: false, message: 'Unauthorized: Access denied' });
   }
 };
 
-// --- API Endpoints ---
+// ==========================================
+// 4. API ENDPOINTS (ROUTES)
+// ==========================================
 
-// ඩේටා සේව් කිරීමට (Admin පැනලයෙන් එවෙන ඩේටා සඳහා)
+// අ) ඩේටා සේව් කිරීමට හෝ අප්ඩේට් කිරීමට (Admin පැනලයෙන්)
 app.post('/store-data', verifyAdminToken, async (req, res) => {
   try {
     const { type, data } = req.body;
-    const newData = new StoreData({ type, data });
-    await newData.save();
+    if (!type || !data) {
+      return res.status(400).json({ success: false, message: 'Type and data are required' });
+    }
+
+    // එකම type එකක් යටතේ පවතින දත්ත අලුත් කරනු ලබයි (Upsert)
+    await StoreData.findOneAndUpdate(
+      { type: type },
+      { data: data, updatedAt: Date.now() },
+      { upsert: true, new: true }
+    );
+
     res.status(200).json({ success: true, message: 'Data saved to MongoDB successfully!' });
   } catch (error) {
     console.error('Error saving data:', error);
@@ -57,7 +79,7 @@ app.post('/store-data', verifyAdminToken, async (req, res) => {
   }
 });
 
-// ඩේටා ලබා ගැනීමට (Frontend එකට)
+// ආ) ඩේටා ලබා ගැනීමට (Frontend සහ Admin පැනලය සඳහා)
 app.get('/get-data', async (req, res) => {
   try {
     const dataList = await StoreData.find({});
@@ -68,17 +90,23 @@ app.get('/get-data', async (req, res) => {
   }
 });
 
-// හෝම් පේජ් රූට් එක
+// ==========================================
+// 5. PAGE ROUTES
+// ==========================================
+
+// හෝම් පේජ් එක
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ඇඩ්මින් පේජ් රූට් එක
+// ඇඩ්මින් පේජ් එක
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'dedunu-secret-admin.html'));
 });
 
-// Server Listen
+// ==========================================
+// 6. SERVER START
+// ==========================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
