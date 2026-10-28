@@ -167,7 +167,7 @@
 
         async function fetchStoreData() {
             try {
-                const response = await fetch('http://localhost:5000/api/store-data');
+                const response = await fetch('/api/store-data');
                 const result = await response.json();
                 if (result.success) {
                     allCategories = result.data.categories;
