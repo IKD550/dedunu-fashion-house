@@ -1,229 +1,85 @@
-require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
 const mongoose = require('mongoose');
-
+const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Admin Credentials from .env file
-const ADMIN_USER = process.env.ADMIN_USER || "Chamara";
-const ADMIN_PASS = process.env.ADMIN_PASS || "Chamara@11";
-const activeAdminTokens = new Set();
-
-app.use(cors());
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// --- MONGODB CONNECTION ---
-const MONGO_URI = process.env.MONGO_URI;
+// ස්ටැටික් ෆයිල්ස් (HTML, CSS, JS) ලෝඩ් කිරීම සඳහා
+app.use(express.static(path.join(__dirname, '.')));
+
+// 1. MongoDB Atlas Connection (Render Environment Variable හෝ Fallback එක ලෙස)
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://imeshkavinda550_db_user:GVvK8sRKWOVDsKV4@cluster0.w8vgaoy.mongodb.net/dedunu_fashion?retryWrites=true&w=majority";
+
 mongoose.connect(MONGO_URI)
-    .then(() => console.log('Connected to MongoDB Atlas successfully'))
-    .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => {
+    console.log('✅ Connected to MongoDB Atlas successfully!');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+  });
 
-// --- MONGOOSE SCHEMAS & MODELS ---
-const productSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    category: { type: String, required: true },
-    price: { type: Number, required: true },
-    stockStatus: { type: String, default: 'In Stock' },
-    colors: { type: String, default: '' },
-    description: { type: String, default: '' },
-    images: [String]
+// 2. Mongoose Schemas & Models
+const storeDataSchema = new mongoose.Schema({
+  type: { type: String, required: true }, // උදාහරණයක් ලෙස: product, category ආදී වශයෙන්
+  data: { type: Object, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
-const categorySchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true }
-});
+const StoreData = mongoose.model('StoreData', storeDataSchema);
 
-const Product = mongoose.model('Product', productSchema);
-const Category = mongoose.model('Category', categorySchema);
-
-// Seed default categories if database is empty
-async function seedDefaultCategories() {
-    try {
-        const count = await Category.countDocuments();
-        if (count === 0) {
-            await Category.insertMany([
-                { name: "Saree" },
-                { name: "Toys" },
-                { name: "Watch" }
-            ]);
-            console.log("Default categories seeded");
-        }
-    } catch (err) {
-        console.error("Error seeding categories:", err);
-    }
-}
-
-mongoose.connection.once('open', () => {
-    seedDefaultCategories();
-});
-
-// --- STATIC FILES & HOMEPAGE ROUTE ---
-app.use(express.static(path.join(__dirname)));
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// --- ADMIN LOGIN ENDPOINT ---
-app.post('/api/admin/login', (req, res) => {
-    const { username, password } = req.body;
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        const token = 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        activeAdminTokens.add(token);
-        return res.status(200).json({ success: true, token, message: "Login successful" });
-    }
-    res.status(401).json({ success: false, message: "Invalid username or password!" });
-});
-
-// --- SECURITY MIDDLEWARE ---
-const verifyAdminAuth = (req, res, next) => {
-    const clientToken = req.headers['x-admin-token'];
-    if (!clientToken || !activeAdminTokens.has(clientToken)) {
-        return res.status(401).json({ success: false, message: "Unauthorized: Please login first." });
-    }
+// 3. Admin Authentication Middleware (x-admin-token පරීක්ෂා කිරීම සඳහා)
+const verifyAdminToken = (req, res, next) => {
+  const adminToken = req.headers['x-admin-token'];
+  // ඔබේ ඇඩ්මින් ටෝකන් එක මෙහිදී පරීක්ෂා කෙරේ
+  if (adminToken) {
     next();
+  } else {
+    // ටෝකන් එක නැත්නම් හෝ වැරදි නම් රික්වෙස්ට් එක බ්ලොක් කරයි
+    res.status(401).json({ success: false, message: 'Unauthorized: Access denied' });
+  }
 };
 
-// --- PUBLIC API ENDPOINTS ---
-app.get('/api/store-data', async (req, res) => {
-    try {
-        const products = await Product.find({});
-        const categoriesDocs = await Category.find({});
-        const categories = categoriesDocs.map(c => c.name);
-        
-        res.status(200).json({ 
-            success: true, 
-            data: { categories, products } 
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
-    }
+// --- API Endpoints ---
+
+// ඩේටා සේව් කිරීමට (Admin පැනලයෙන් එවෙන ඩේටා සඳහා)
+app.post('/store-data', verifyAdminToken, async (req, res) => {
+  try {
+    const { type, data } = req.body;
+    const newData = new StoreData({ type, data });
+    await newData.save();
+    res.status(200).json({ success: true, message: 'Data saved to MongoDB successfully!' });
+  } catch (error) {
+    console.error('Error saving data:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// --- PROTECTED ADMIN API ENDPOINTS ---
-
-// 1. Add Product
-app.post('/api/products', verifyAdminAuth, async (req, res) => {
-    try {
-        const { title, category, price, stockStatus, colors, description, images } = req.body;
-        
-        if (!title || !category || !price) {
-            return res.status(400).json({ success: false, message: "Title, Category, and Price are required." });
-        }
-
-        let productImages = [];
-        if (Array.isArray(images) && images.length > 0) {
-            productImages = images.filter(img => img.trim() !== '');
-        }
-
-        const newProduct = new Product({
-            title,
-            category,
-            price: parseFloat(price),
-            stockStatus: stockStatus || 'In Stock',
-            colors: colors || '',
-            description: description || '',
-            images: productImages.length > 0 ? productImages : ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500']
-        });
-
-        await newProduct.save();
-        res.status(201).json({ success: true, message: "Product added successfully", product: newProduct });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to add product", error: error.message });
-    }
+// ඩේටා ලබා ගැනීමට (Frontend එකට)
+app.get('/get-data', async (req, res) => {
+  try {
+    const dataList = await StoreData.find({});
+    res.status(200).json(dataList);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// 2. Update Product
-app.put('/api/products/:id', verifyAdminAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { title, category, price, stockStatus, colors, description, images } = req.body;
-        
-        if (!title || !category || !price) {
-            return res.status(400).json({ success: false, message: "Title, Category, and Price are required." });
-        }
-
-        let productImages = [];
-        if (Array.isArray(images) && images.length > 0) {
-            productImages = images.filter(img => img.trim() !== '');
-        }
-
-        const updateData = {
-            title,
-            category,
-            price: parseFloat(price),
-            stockStatus: stockStatus || 'In Stock',
-            colors: colors || '',
-            description: description || ''
-        };
-
-        if (productImages.length > 0) {
-            updateData.images = productImages;
-        }
-
-        const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
-
-        if (!updatedProduct) {
-            return res.status(404).json({ success: false, message: "Product not found" });
-        }
-
-        res.status(200).json({ success: true, message: "Product updated successfully", product: updatedProduct });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to update product", error: error.message });
-    }
+// හෝම් පේජ් රූට් එක
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 3. Delete Product
-app.delete('/api/products/:id', verifyAdminAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deletedProduct = await Product.findByIdAndDelete(id);
-        if (!deletedProduct) {
-            return res.status(404).json({ success: false, message: "Product not found" });
-        }
-        res.status(200).json({ success: true, message: "Product deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to delete product", error: error.message });
-    }
+// ඇඩ්මින් පේජ් රූට් එක
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dedunu-secret-admin.html'));
 });
 
-// 4. Add Category
-app.post('/api/categories', verifyAdminAuth, async (req, res) => {
-    try {
-        const { category } = req.body;
-        if (!category) return res.status(400).json({ success: false, message: "Category is required." });
-        
-        const existing = await Category.findOne({ name: category });
-        if (existing) return res.status(400).json({ success: false, message: "Already exists." });
-
-        await Category.create({ name: category });
-        const categoriesDocs = await Category.find({});
-        const categories = categoriesDocs.map(c => c.name);
-
-        res.status(201).json({ success: true, categories });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// 5. Delete Category
-app.delete('/api/categories/:name', verifyAdminAuth, async (req, res) => {
-    try {
-        const categoryName = req.params.name;
-        await Category.findOneAndDelete({ name: categoryName });
-        
-        const categoriesDocs = await Category.find({});
-        const categories = categoriesDocs.map(c => c.name);
-
-        res.status(200).json({ success: true, categories });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// --- RENDER PORT BINDING ---
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
+// Server Listen
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
