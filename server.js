@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,37 +10,61 @@ const PORT = process.env.PORT || 5000;
 // Admin Credentials from .env file
 const ADMIN_USER = process.env.ADMIN_USER || "Chamara";
 const ADMIN_PASS = process.env.ADMIN_PASS || "Chamara@11";
-
-// Store active session tokens in memory
 const activeAdminTokens = new Set();
 
 app.use(cors());
 app.use(express.json());
 
-// --- STATIC FILES & HOMEPAGE ROUTE ---
-// Serve static files (HTML, CSS, images, etc.) from the root directory
-app.use(express.static(path.join(__dirname)));
+// --- MONGODB CONNECTION ---
+const MONGO_URI = process.env.MONGO_URI;
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('Connected to MongoDB Atlas successfully'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
-// Explicit route for homepage
+// --- MONGOOSE SCHEMAS & MODELS ---
+const productSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    category: { type: String, required: true },
+    price: { type: Number, required: true },
+    stockStatus: { type: String, default: 'In Stock' },
+    colors: { type: String, default: '' },
+    description: { type: String, default: '' },
+    images: [String]
+});
+
+const categorySchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true }
+});
+
+const Product = mongoose.model('Product', productSchema);
+const Category = mongoose.model('Category', categorySchema);
+
+// Seed default categories if database is empty
+async function seedDefaultCategories() {
+    try {
+        const count = await Category.countDocuments();
+        if (count === 0) {
+            await Category.insertMany([
+                { name: "Saree" },
+                { name: "Toys" },
+                { name: "Watch" }
+            ]);
+            console.log("Default categories seeded");
+        }
+    } catch (err) {
+        console.error("Error seeding categories:", err);
+    }
+}
+
+mongoose.connection.once('open', () => {
+    seedDefaultCategories();
+});
+
+// --- STATIC FILES & HOMEPAGE ROUTE ---
+app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-const dbPath = path.join(__dirname, 'data.json');
-
-const readDB = () => {
-    if (!fs.existsSync(dbPath)) {
-        const initialData = { categories: ["Saree", "Toys", "Watch"], products: [] };
-        fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2));
-        return initialData;
-    }
-    const data = fs.readFileSync(dbPath, 'utf8');
-    return JSON.parse(data);
-};
-
-const writeDB = (data) => {
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-};
 
 // --- ADMIN LOGIN ENDPOINT ---
 app.post('/api/admin/login', (req, res) => {
@@ -53,7 +77,7 @@ app.post('/api/admin/login', (req, res) => {
     res.status(401).json({ success: false, message: "Invalid username or password!" });
 });
 
-// --- SECURITY MIDDLEWARE FOR ADMIN ACTIONS ---
+// --- SECURITY MIDDLEWARE ---
 const verifyAdminAuth = (req, res, next) => {
     const clientToken = req.headers['x-admin-token'];
     if (!clientToken || !activeAdminTokens.has(clientToken)) {
@@ -63,10 +87,16 @@ const verifyAdminAuth = (req, res, next) => {
 };
 
 // --- PUBLIC API ENDPOINTS ---
-app.get('/api/store-data', (req, res) => {
+app.get('/api/store-data', async (req, res) => {
     try {
-        const db = readDB();
-        res.status(200).json({ success: true, data: db });
+        const products = await Product.find({});
+        const categoriesDocs = await Category.find({});
+        const categories = categoriesDocs.map(c => c.name);
+        
+        res.status(200).json({ 
+            success: true, 
+            data: { categories, products } 
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
@@ -75,7 +105,7 @@ app.get('/api/store-data', (req, res) => {
 // --- PROTECTED ADMIN API ENDPOINTS ---
 
 // 1. Add Product
-app.post('/api/products', verifyAdminAuth, (req, res) => {
+app.post('/api/products', verifyAdminAuth, async (req, res) => {
     try {
         const { title, category, price, stockStatus, colors, description, images } = req.body;
         
@@ -88,9 +118,7 @@ app.post('/api/products', verifyAdminAuth, (req, res) => {
             productImages = images.filter(img => img.trim() !== '');
         }
 
-        const db = readDB();
-        const newProduct = {
-            id: Date.now().toString(),
+        const newProduct = new Product({
             title,
             category,
             price: parseFloat(price),
@@ -98,11 +126,9 @@ app.post('/api/products', verifyAdminAuth, (req, res) => {
             colors: colors || '',
             description: description || '',
             images: productImages.length > 0 ? productImages : ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500']
-        };
+        });
 
-        db.products.push(newProduct);
-        writeDB(db);
-
+        await newProduct.save();
         res.status(201).json({ success: true, message: "Product added successfully", product: newProduct });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to add product", error: error.message });
@@ -110,7 +136,7 @@ app.post('/api/products', verifyAdminAuth, (req, res) => {
 });
 
 // 2. Update Product
-app.put('/api/products/:id', verifyAdminAuth, (req, res) => {
+app.put('/api/products/:id', verifyAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const { title, category, price, stockStatus, colors, description, images } = req.body;
@@ -119,43 +145,44 @@ app.put('/api/products/:id', verifyAdminAuth, (req, res) => {
             return res.status(400).json({ success: false, message: "Title, Category, and Price are required." });
         }
 
-        const db = readDB();
-        const index = db.products.findIndex(p => p.id === id);
-
-        if (index === -1) {
-            return res.status(404).json({ success: false, message: "Product not found" });
-        }
-
         let productImages = [];
         if (Array.isArray(images) && images.length > 0) {
             productImages = images.filter(img => img.trim() !== '');
         }
 
-        db.products[index] = {
-            ...db.products[index],
+        const updateData = {
             title,
             category,
             price: parseFloat(price),
             stockStatus: stockStatus || 'In Stock',
             colors: colors || '',
-            description: description || '',
-            images: productImages.length > 0 ? productImages : db.products[index].images
+            description: description || ''
         };
 
-        writeDB(db);
-        res.status(200).json({ success: true, message: "Product updated successfully", product: db.products[index] });
+        if (productImages.length > 0) {
+            updateData.images = productImages;
+        }
+
+        const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
+
+        if (!updatedProduct) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Product updated successfully", product: updatedProduct });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to update product", error: error.message });
     }
 });
 
 // 3. Delete Product
-app.delete('/api/products/:id', verifyAdminAuth, (req, res) => {
+app.delete('/api/products/:id', verifyAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const db = readDB();
-        db.products = db.products.filter(p => p.id !== id);
-        writeDB(db);
+        const deletedProduct = await Product.findByIdAndDelete(id);
+        if (!deletedProduct) {
+            return res.status(404).json({ success: false, message: "Product not found" });
+        }
         res.status(200).json({ success: true, message: "Product deleted successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Failed to delete product", error: error.message });
@@ -163,33 +190,40 @@ app.delete('/api/products/:id', verifyAdminAuth, (req, res) => {
 });
 
 // 4. Add Category
-app.post('/api/categories', verifyAdminAuth, (req, res) => {
+app.post('/api/categories', verifyAdminAuth, async (req, res) => {
     try {
         const { category } = req.body;
         if (!category) return res.status(400).json({ success: false, message: "Category is required." });
-        const db = readDB();
-        if (db.categories.includes(category)) return res.status(400).json({ success: false, message: "Already exists." });
-        db.categories.push(category);
-        writeDB(db);
-        res.status(201).json({ success: true, categories: db.categories });
+        
+        const existing = await Category.findOne({ name: category });
+        if (existing) return res.status(400).json({ success: false, message: "Already exists." });
+
+        await Category.create({ name: category });
+        const categoriesDocs = await Category.find({});
+        const categories = categoriesDocs.map(c => c.name);
+
+        res.status(201).json({ success: true, categories });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
 // 5. Delete Category
-app.delete('/api/categories/:name', verifyAdminAuth, (req, res) => {
+app.delete('/api/categories/:name', verifyAdminAuth, async (req, res) => {
     try {
         const categoryName = req.params.name;
-        const db = readDB();
-        db.categories = db.categories.filter(c => c !== categoryName);
-        writeDB(db);
-        res.status(200).json({ success: true, categories: db.categories });
+        await Category.findOneAndDelete({ name: categoryName });
+        
+        const categoriesDocs = await Category.find({});
+        const categories = categoriesDocs.map(c => c.name);
+
+        res.status(200).json({ success: true, categories });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
+// --- RENDER PORT BINDING ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
 });
